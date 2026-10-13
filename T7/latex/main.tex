@@ -1,0 +1,276 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{graphicx}
+\usepackage[margin=2cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage[croatian]{babel}
+\usepackage[sorting=none]{biblatex}
+    \addbibresource{ref.bib}
+
+
+% Boje za kod:
+\usepackage{xcolor,graphicx}
+\usepackage{listings}
+
+\definecolor{solarized-base03}{RGB}{0, 43, 54}
+\definecolor{solarized-base02}{RGB}{7, 54, 66}
+\definecolor{solarized-base01}{RGB}{88, 110, 117}
+\definecolor{solarized-base00}{RGB}{101, 123, 131}
+\definecolor{solarized-base0}{RGB}{131, 148, 150}
+\definecolor{solarized-base1}{RGB}{147, 161, 161}
+\definecolor{solarized-base2}{RGB}{238, 232, 213}
+\definecolor{solarized-base3}{RGB}{253, 246, 227}
+\definecolor{solarized-yellow}{RGB}{181, 137, 0}
+\definecolor{solarized-orange}{RGB}{203, 75, 22}
+\definecolor{solarized-red}{RGB}{220, 50, 47}
+\definecolor{solarized-magenta}{RGB}{211, 54, 130}
+\definecolor{solarized-violet}{RGB}{108, 113, 196}
+\definecolor{solarized-blue}{RGB}{38, 139, 210}
+\definecolor{solarized-cyan}{RGB}{42, 161, 198}
+\definecolor{solarized-green}{RGB}{133, 153, 0}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily\color{solarized-base00},
+  keywordstyle=\color{solarized-blue}\bfseries,
+  commentstyle=\color{solarized-base1},
+  stringstyle=\color{solarized-cyan},
+  identifierstyle=\color{solarized-violet},
+  numberstyle=\tiny\color{solarized-base01},
+  numbers=left,
+  firstnumber=1,
+  stepnumber=1,
+  showstringspaces=false,
+  tabsize=4,
+  frame=none,
+  framerule=1pt,
+  framexleftmargin=5pt,
+  framexrightmargin=5pt,
+  framextopmargin=3pt,
+  framexbottommargin=3pt,
+  backgroundcolor=\color{solarized-base3},
+  rulecolor=\color{solarized-base01},
+  breaklines=true,
+  breakatwhitespace=true,
+  language=C++
+}
+
+
+\begin{document}
+\noindent
+Univerzitet u Sarajevu\\
+Elektrotehnički fakultet\\
+Predmet: Uvod u digitalnu obradu slike\\
+Predmetni profesor: prof. dr Emir Sokić\\
+Autor: Berina Biberović\\
+Akademska godina: 2022/2023.
+
+
+\begin{center}
+    \section*{Tutorijal 7}
+    \subsection*{Morfološke operacije. \textit{Watershed} algoritam.}
+\end{center}
+
+Tema ovog tutorijala su morfološke operacije i \textit{Watershed} algoritam. Pokazati ćemo kako se može u OpenCV-u implementirati erozija, dilatacija, napredne morfološke operacije i \textit{Watershed} algoritam.
+
+Radi olakšanja načina programiranja, napravit ćemo funkcije koje će biti implementirane da bi se olakšalo shvatanje i implementacija koda. Ovaj kod je zasnovan na kodu sa OpenCV stranice koji je prikazan na \href{https://docs.opencv.org/4.x/d2/dbd/tutorial_distance_transform.html}{linku}.
+
+Prvi dio \lstinline{main} funkcije je jednostavan - potrebno je učitati sliku nad kojom želimo izvršiti \textit{Watershed} algoritam, prebaciti je u \textit{grayscaele} format, i izvršiti \textit{Otsu}-ovu binarizaciju sa funkcijom \lstinline{cv::threshold} gdje će posljednji parametar biti \lstinline{cv::THRESH_BINARY_INV + cv::THRESH_OTSU}.
+
+Nakon toga je potrebno kreirati jedan prozor sa tri \textit{trackbar}-a (ovo je da bude lakše pratiti šta se dešava sa slikom) na sljedeći način:
+
+\begin{lstlisting}
+    cv::namedWindow(window_name, cv::WINDOW_AUTOSIZE);
+    cv::createTrackbar("Operator:\n 0: Opening - 1: Closing  \n 2: Gradient - 3: Top Hat \n 4: Black Hat", window_name, &morph_operator, max_operator, Morfoloske_Operacije);
+    cv::createTrackbar("Element:\n 0: Rect - 1: Cross - 2: Ellipse", window_name, &morph_elem, max_elem, Morfoloske_Operacije);
+    cv::createTrackbar("Kernel size:\n 2n +1", window_name, &morph_size, max_kernel_size, Morfoloske_Operacije);
+\end{lstlisting}
+
+Bitno je naglasiti da sve korištene varijable (uključujući i učitane slike) su globalne varijable! One su navedene u nastavku, iznad \lstinline{main} funkcije, zajedno sa prototipima prethodno navedenih funkcija:
+
+\begin{lstlisting}
+cv::Mat originalna, gray, binarna, morfoloska_obrada, dilatacija, erozija, razlika, watershed;
+
+int morph_operator = 0;
+int morph_elem = 0;
+int morph_size = 0;
+
+int erosion_elem = 0;
+int erosion_size = 0;
+int dilation_elem = 0;
+int dilation_size = 0;
+
+int const max_operator = 4;
+int const max_elem = 2;
+int const max_kernel_size = 21;
+
+std::string window_name = "Morfoloska transformacija";
+
+void Morfoloske_Operacije(int, void*);
+void Dilatacija(int, void*);
+void Erozija(int, void*);
+\end{lstlisting}
+
+Vratimo se na \textit{trackbar}-ove koje smo prethodno napravili. Kao što možete primijetiti, oni pozivaju funkciju \lstinline{Morfoloske_Operacije}. Ta funkcija je prikazana u nastavku:
+
+\begin{lstlisting}
+void Morfoloske_Operacije(int, void*) {
+    int operation = morph_operator + 2;
+
+    cv::Mat element = cv::getStructuringElement(morph_elem, cv::Size(2 * morph_size + 1, 2 * morph_size + 1), cv::Point(morph_size, morph_size));
+
+    cv::morphologyEx(binarna, morfoloska_obrada, operation, element);
+
+    cv::imshow(window_name, morfoloska_obrada);
+}
+\end{lstlisting}
+
+Primijetit ćete da svaka od korisički napravljenih funkcija koristi prethodno spomenute globalne varijable. Razlog zašto je tako implementirano (inače nije preporučeno koristiti globalne varijable uvijek, ali ovdje imamo dobar razlog za to) je što bi funkcije bile previše glomazne kada bismo im prenosili sve potrebne parametre po referenci (radi uštede memorije i pamćenja promijene varijabli), tako da globalne varijable svakako čuvaju svaku promjenu koja se na njima desi u toku njihovog postojanja.
+
+Prva linija funkcije \lstinline{Morfoloske_Operacije} inicijalizira varijablu \lstinline{int operation} preko globalne varijable \lstinline{morph_operator} i dodaje joj 2. Nakon toga, pravimo novu instancu klase \lstinline{cv::Mat} preko funkcije \lstinline{cv::getStructuringElement} koja prima sljedeće parametre: prvi parametar je tipa \lstinline{int} i predstavlja oblik elementa koji može biti jedan iz klase \lstinline{cv::MorphShapes}; drugi parametar je tipa \lstinline{cv::Size} i predstavlja veličinu strukturnog elementa; dok je treći parametar tipa \lstinline{cv::Point} i predstavlja referentnu tačku unutar elementa.
+
+Nakon toga pozivamo funkciju \lstinline{cv::morphologyEx} koja prima sljedeće parametre: prvi parametar je tipa \lstinline{InputArray} i predstavlja izvornu binarnu sliku; drugi parametar je tipa \lstinline{OutputArray} i predstavlja sliku u koju se spašava rezultat napredne morfološke transformacije; treći parametar je tipa \lstinline{int} i predstavlja tip morfološke operacije (detalje možete pronaći na \href{https://docs.opencv.org/3.4/d4/d86/group__imgproc__filter.html#ga7be549266bad7b2e6a04db49827f9f32}{linku}); četvrti parametar je tipa \lstinline{InputArray} i predstavlja strukturni element. Posljednja četiri parametra su preklopljena i u njihove detalje nećemo ulaziti.
+
+Funkcija \lstinline{Morfoloske_Operacije} je tu da uklonimo šum sa prosljeđene slike!
+
+Iz \textit{trackbar}-a iz \lstinline{main} funkcije možemo vidjeti da mi zapravo pomjeranjem \textit{trackbar}-a mijenjamo varijable \lstinline{morph_operator}, \lstinline{morph_elem} i \lstinline{morph_size}. Pošto su poslani po referenci u funkciju \lstinline{cv::getTrackbarPos} to znači da konstantno vršimo ažuriranje ova tri parametra (koji su globalne varijable). 
+
+Sljedeća stvar koju pozivamo u \lstinline{main} funkciji je:
+
+\begin{lstlisting}
+    Morfoloske_Operacije(0, 0);
+    cv::waitKey(0);
+\end{lstlisting}
+
+čime pozivamo funkciju \lstinline{Morfoloske_Operacije} i držimo prozor sa navedenim \textit{trackbar}-ovima otvorenim, dokle god korisnik ne pritisne tipku na tastaturi.
+
+Dalje ćemo objasniti funkciju za eroziju i šta smo u \lstinline{main}-u napisali. \lstinline{main} sada glasi:
+
+\begin{lstlisting}
+    cv::namedWindow("Erozija - prikaz", cv::WINDOW_AUTOSIZE);
+
+    cv::createTrackbar("Element:\n 0: Rect \n 1: Cross \n 2: Ellipse", "Erozija - prikaz", &erosion_elem, max_elem, Erozija);
+    cv::createTrackbar("Kernel size:\n 2n +1", "Erozija - prikaz", &erosion_size, max_kernel_size, Erozija);
+
+    Erozija(0, 0);
+    cv::waitKey(0);
+\end{lstlisting}
+
+Slično kao za prethodno \textit{user} definiranu funkciju, sada imamo korisničku funkciju \lstinline{Erozija}:
+
+\begin{lstlisting}
+void Erozija(int, void*) {
+    int erosion_type = 0;
+    if(erosion_elem == 0) erosion_type = cv::MORPH_RECT;
+    else if(erosion_elem == 1) erosion_type = cv::MORPH_CROSS;
+    else if(erosion_elem == 2) erosion_type = cv::MORPH_ELLIPSE;
+
+    cv::Mat element = cv::getStructuringElement(erosion_type, cv::Size(2 * erosion_size + 1, 2 * erosion_size + 1), cv::Point(erosion_size, erosion_size));
+
+    cv::erode(morfoloska_obrada, erozija, element);
+    cv::imshow("Erozija - prikaz", erozija);
+}
+\end{lstlisting}
+
+gdje na osnovu izabrane vrijednosti u \textit{trackbar}-u biramo vrijednost za tip erozije. Opet koristimo na sličan način funkciju \lstinline{cv::getStructuringElement} i onda pozivamo funkciju \lstinline{cv::erode} koja prima sljedeće parametre: prvi parametar je tipa \lstinline{InputArray} i predstavlja sliku nad kojom radimo eroziju; drugi parametar je tipa \lstinline{OutputArray} i predstavlja sliku koja je rezultat erozije; treći parametar je tipa \lstinline{InputArray} i predstavlja strukturni elemenat koji se koristi za eroziju; ostala četiri parametra su preklopljena i nećemo ulaziti u njihove detalje u ovom tutorijalu.
+
+Sada radimo dilataciju na sličan način kao eroziju, u \lstinline{main} funkciji pišemo:
+
+\begin{lstlisting}
+    cv::namedWindow("Dilatacija - prikaz", cv::WINDOW_AUTOSIZE);
+    cv::moveWindow("Dilatacija - prikaz", morfoloska_obrada.cols, 0);
+    cv::createTrackbar("Element:\n 0: Rect \n 1: Cross \n 2: Ellipse", "Dilatacija - prikaz", &dilation_elem, max_elem, Dilatacija);
+    cv::createTrackbar("Kernel size:\n 2n +1", "Dilatacija - prikaz", &dilation_size, max_kernel_size, Dilatacija);
+
+    Dilatacija(0, 0);
+    cv::waitKey(0);
+\end{lstlisting}
+
+dok funkcija \lstinline{Dilatacija} izgleda ovako:
+
+\begin{lstlisting}
+void Dilatacija(int, void*) {
+    int dilation_type = 0;
+    if(dilation_elem == 0) dilation_type = cv::MORPH_RECT;
+    else if(dilation_elem == 1) dilation_type = cv::MORPH_CROSS;
+    else if(dilation_elem == 2) dilation_type = cv::MORPH_ELLIPSE;
+
+    cv::Mat element = cv::getStructuringElement(dilation_type, cv::Size(2 * dilation_size + 1, 2 * dilation_size + 1), cv::Point(dilation_size, dilation_size));
+
+    cv::dilate(erozija, dilatacija, element);
+    cv::imshow("Dilatacija - prikaz", dilatacija);
+}
+\end{lstlisting}
+
+Vidimo ovdje i funkciju \lstinline{cv::dilate} koja radi na sličan način kao funkcija \lstinline{cv::erode}, samo što vrši dilataciju, a ne eroziju.
+
+Sljedeći dio koda je najkompleksniji. Potrebno je sada na rezultantnu sliku erozije i dilatacije primijeniti \textit{Watershed} algoritam. Kod \lstinline{main} funkcije nakon svega do sada što smo prikazali glasi:
+
+\begin{lstlisting}
+    cv::Mat konektovane(erozija.size(), CV_32S);
+    int broj_komponenti = cv::connectedComponents(erozija, konektovane, 8, CV_32S);
+
+    int sirina = konektovane.rows, duzina = konektovane.cols;
+    int pix;
+
+    for(int i = 0; i < sirina; i++) {
+        for(int j = 0; j < duzina; j++) {
+            pix = konektovane.at<int>(i, j);
+
+            if(pix == 0) {
+                pix = broj_komponenti;
+
+                konektovane.at<int>(i, j) = pix;
+            }
+
+        }
+    }
+
+    for(int i = 0; i < sirina; i++) {
+        for(int j = 0; j < duzina; j++) {
+            auto pix1 = erozija.at<char>(i, j);
+            auto pix2 = dilatacija.at<char>(i, j);
+
+            if(pix1 != pix2) {
+                konektovane.at<int>(i, j) = 0;
+            }
+        }
+    }
+    cv::watershed(originalna, konektovane);
+
+    // Generate random colors:
+    std::vector<cv::Vec3b> colors;
+    for(int i = 0; i < broj_komponenti; i++) {
+        int b = cv::theRNG().uniform(0, 256);
+        int g = cv::theRNG().uniform(0, 256);
+        int r = cv::theRNG().uniform(0, 256);
+
+        colors.push_back(cv::Vec3b((uchar)b, (uchar)g, (uchar)r));
+    }
+
+    cv::Mat dst = cv::Mat::zeros(konektovane.size(), CV_8UC3);
+
+    for(int i = 0; i < konektovane.rows; i++) {
+        for(int j = 0; j < konektovane.cols; j++) {
+            int index = konektovane.at<int>(i, j);
+            if(index > 0 && index <= static_cast<int>(broj_komponenti)) {
+                dst.at<cv::Vec3b>(i, j) = colors[index - 1];
+            }
+        }
+    }
+\end{lstlisting}
+
+Nakon što se uradi poziv funkcije \lstinline{cv::connectedComponents} nad erodiranom slikom koja broji koliko novčića je na slici i tako izbrojane novčiće smješta u \lstinline{cv::Mat konektovane} - najteži dio zapravo predstavlja kako da kombinacijom onoga što smo dobili kao rezultat i erozije i dilatacije kažemo zapravo programu za šta nismo sigurni da je pozadina ili novčić. To je urađeno u kodu u linijama 1 do 29.
+
+Kada se tako dobije slika \lstinline{konektovane} onda se \lstinline{cv::watershed} primijeni nad njom i nad originalnom slikom. Onda se napravi vektor random boja za bojanje različitih novčića na slici i uz pomoć tog vektora i slike koja je rezultat \lstinline{cv::watershed} funkcije možemo prikazati kako je program izdvojio različite novčiće sa slike. Ovo se ostavlja studentima da urade sami jednostavnom primjenom funkcije \lstinline{cv::imshow} ili \lstinline{cv::imwrite} kako bi vidjeli rezultate.
+
+\textit{Watershed} segmentacija radi na principu markera. Svakom pikselu će se dodijeliti marker koji odgovara ili pozadini ili nekom od objekata na slici. Algoritam \textit{Watershed} segmentacije zahtjeva da mu se pripremi slika tako što se markerima označe neki pikseli koji sigurno pripadaju svakom od objekata (minimalno 1 piksel po objektu), neki pikseli koji sigurno pripadaju pozadini (minimalno 1 piksel za svaki nepovezani dio pozadine) i da preostali pikseli budu označeni sa markerom 0 koji označava da nije unaprijed poznato čemu pripadaju. \textit{Watershed} segmentacija će promijeniti markere na ovim pikselima i dodijeliti ih nekom od objekata ili pozadini.
+
+\textit{Watershed} segmentacija se zasniva na inkrementalnom dodjeljivanju markera nepoznatim pikselima vrijednost markera nekog od susjednih piksela. Iz ovog razloga je preprocesiranje slike dodjeljivanjem nekih tačnih markera od ključne važnosti i zbog toga smo imali tri funkcije koje su pripremile datu sliku za \textit{Watershed} segmentaciju. Napominjemo da studenti ne zaborave sve module i biblioteke koje se trebaju uključiti na početku programa kako bi im radio primjer.
+
+\subsection*{Napomene}
+
+Korištena tema za prikaz C++ koda na tutorijalima je \href{https://ethanschoonover.com/solarized/}{\lstinline{solarized}}\cite{solarized}.
+
+\printbibliography
+
+
+\end{document}

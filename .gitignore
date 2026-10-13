@@ -1,0 +1,38 @@
+/.lokalno/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / Qt Creator
+.vscode/
+.idea/
+*~
+*.swp
+CMakeLists.txt.user*
+
+# CMake / C++
+build/
+build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.o
+*.a
+*.so
+
+# LaTeX
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc
+latex/main.pdf

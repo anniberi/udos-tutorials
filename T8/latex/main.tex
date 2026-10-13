@@ -1,0 +1,167 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{graphicx}
+\usepackage[margin=2cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage[croatian]{babel}
+\usepackage[sorting=none]{biblatex}
+    \addbibresource{ref.bib}
+\usepackage{amsmath}
+
+% Boje za kod:
+\usepackage{xcolor,graphicx}
+\usepackage{listings}
+
+\definecolor{solarized-base03}{RGB}{0, 43, 54}
+\definecolor{solarized-base02}{RGB}{7, 54, 66}
+\definecolor{solarized-base01}{RGB}{88, 110, 117}
+\definecolor{solarized-base00}{RGB}{101, 123, 131}
+\definecolor{solarized-base0}{RGB}{131, 148, 150}
+\definecolor{solarized-base1}{RGB}{147, 161, 161}
+\definecolor{solarized-base2}{RGB}{238, 232, 213}
+\definecolor{solarized-base3}{RGB}{253, 246, 227}
+\definecolor{solarized-yellow}{RGB}{181, 137, 0}
+\definecolor{solarized-orange}{RGB}{203, 75, 22}
+\definecolor{solarized-red}{RGB}{220, 50, 47}
+\definecolor{solarized-magenta}{RGB}{211, 54, 130}
+\definecolor{solarized-violet}{RGB}{108, 113, 196}
+\definecolor{solarized-blue}{RGB}{38, 139, 210}
+\definecolor{solarized-cyan}{RGB}{42, 161, 198}
+\definecolor{solarized-green}{RGB}{133, 153, 0}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily\color{solarized-base00},
+  keywordstyle=\color{solarized-blue}\bfseries,
+  commentstyle=\color{solarized-base1},
+  stringstyle=\color{solarized-cyan},
+  identifierstyle=\color{solarized-violet},
+  numberstyle=\tiny\color{solarized-base01},
+  numbers=left,
+  firstnumber=1,
+  stepnumber=1,
+  showstringspaces=false,
+  tabsize=4,
+  frame=none,
+  framerule=1pt,
+  framexleftmargin=5pt,
+  framexrightmargin=5pt,
+  framextopmargin=3pt,
+  framexbottommargin=3pt,
+  backgroundcolor=\color{solarized-base3},
+  rulecolor=\color{solarized-base01},
+  breaklines=true,
+  breakatwhitespace=true,
+  language=C++
+}
+
+
+\begin{document}
+\noindent
+Univerzitet u Sarajevu\\
+Elektrotehnički fakultet\\
+Predmet: Uvod u digitalnu obradu slike\\
+Predmetni profesor: prof. dr Emir Sokić\\
+Autor: Berina Biberović\\
+Akademska godina: 2022/2023.
+
+
+\begin{center}
+    \section*{Tutorijal 8}
+    \subsection*{Deskriptori oblika}    
+\end{center}
+
+\subsection*{Zatvorene konture i klasifikacija na osnovu broja vrhova}
+
+Kako bismo mogli klasificirati date elemente na slikama sa laboratorijske vježbe broj 8, potrebno je prvo da izdvojimo konture likova na slici. To možemo uraditi sa funkcijom \lstinline{cv::findContours}. Trebamo istaći da prvo je potrebno učitati odgovarajuću sliku u \textit{grayscale} obliku, nakon toga uz pomoć funkcije \lstinline{cv::threshold} koju smo objasnili na tutorijalu 2 i \textit{Otsu}-ove binarizacije prebaciti tu sliku u binarnu sliku. Nad takvom binarnom slikom moguće je da će trebati uraditi istovremeno eroziju i dilataciju kako smo objasnili na prethodnom tutorijalu kako bismo makli šum sa slike. 
+
+Nakon toga potrebno je napraviti varijablu tipa \lstinline{std::vector<std::vector<cv::Point>>} u koju ćemo smjestiti pronađene konture. Pozivamo funkciju \lstinline{cv::findContours} koja prima sljedeće parametre: prvi parametar je tipa \lstinline{InputOutputArray} koji predstavlja binarnu sliku; drugi parametar je tipa \lstinline{OutputArrayOfArrays} koji predstavlja gore navedenu varijablu u koju će biti konture smještene; treći parametar je tipa \lstinline{int} koji predstavlja princip rada pronalaska kontura; četvrti parametar je tipa \lstinline{int} i pretstavlja metodu konturne aproksimacije; dok je peti parametar tipa \lstinline{Point} i on je preklopljen. Dakle, ukoliko je naša binarna slika pod imenom \lstinline{binarna}, a vektor kontura \lstinline{konture}, onda možemo pozvati ovu funkciju na sljedeći način:
+
+\begin{lstlisting}
+    cv::findContours(binarna, konture, cv::RETR_LIST, cv::CHAIN_APPROX_SIMPLE);
+\end{lstlisting}
+
+Studentima se predlaže da se igraju sa različitim metodama konturne aproksimacije kako bi vidjeli kakve rezultate dobijaju. Nakon toga, potrebno je aproksimirati dobijene konture sa specificiranom preciznošću, a to možemo uraditi preko funkcije \lstinline{cv::approxPolyDP} koja aproksimira neku krivu sa drugom krivom koja ima manji broj tjemena. Možemo onda pisati:
+
+\begin{lstlisting}
+    std::vector< std::vector<cv::Point> > aproksimirane_konture;
+    aproksimirane_konture.resize(konture.size());
+
+    // Pronalazak vrhova kontura:
+    for(int i = 0; i < konture.size(); i++)
+        cv::approxPolyDP(konture.at(i), aproksimirane_konture.at(i), 3, true);
+\end{lstlisting}
+
+Nakon toga, u vektoru \lstinline{aproksimirane_konture} imamo sve konture na slici i potrebno je samo prebrojati koliko vrhova imaju elementi tog vektora i na osnovu toga izvršiti klasifikaciju kontura. Ovakav način klasifikacije nije savršen, i studenti će otkriti koje greške se prave ovom metodom kada budu radili laboratorijsku vježbu 8.
+
+Još neke funkcija koje će možda studentima trebati za zadatak 1 sa laboratorijske vježbe 8 su: \lstinline{cv::drawContours}, \lstinline{cv::minEnclosingCircle} i \lstinline{cv::putText}. Funkcija \lstinline{cv::drawContours} crta konture na slici tako što joj proslijedimo sliku oblika sa koje smo našli konture, sve konture koje smo našli, indeks konture, boju konture kojom želimo da bude nacrtana i debljinu linije koju želimo. Tako da možemo staviti unutar \lstinline{for} petlje:
+
+\begin{lstlisting}
+    cv::drawContours(slika, konture, indeks, cv::Scalar(255, 0, 0), 2);
+\end{lstlisting}
+
+Funkcija \lstinline{cv::putText} na sličan način radi, prosljeđujemo joj sliku gdje želimo napisati tekst, string koji želimo da se ispiše, tačku na kojoj želimo da se ispiše, font, veličinu i boju teksta. Tako da može ovako glasiti poziv ove funkcije:
+
+\begin{lstlisting}
+    cv::putText(slika, "Neki tekst", tacka, cv::FONT_HERSHEY_DUPLEX, 0.5, cv::Scalar(255, 255, 0));
+\end{lstlisting}
+
+gdje je parametar \lstinline{tacka} tipa \lstinline{cv::Point2f}.
+
+Funkcija \lstinline{cv::minEnclosingCircle} prima tri parametra: niz tačaka (koji kod nas će predstavljati aproksimiranu konturu), tačku \lstinline{Point2f} koja se prenosi po referenci (izlazni parametar) koja predstavlja sredinu konture i \lstinline{float} koji se prenosi po referenci (izlazni parametar) koji predstavlja radijus konture.
+
+\subsection*{Cirkularnost i konveksnost geometrijskih oblika}
+
+Potrebno je da imamo pronađene aproksimirane konture iz prethodnog dijela tutorijala kako bismo mogli izračunati cirkularnost i konveksnost datih likova na slici. Cirkularnost nekog oblika se računa prema formuli:
+
+\begin{equation*}
+    cirkularnost = 4 \pi \frac{površina}{(dužina \; luka)^2}
+\end{equation*}
+
+Konveksnost se računa prema formuli:
+
+\begin{equation*}
+    konveksnost = \frac{površina}{površina \;  konveksnog \; omotača \; oblika}
+\end{equation*}
+
+Za računanje površine možemo koristiti funkciju \lstinline{cv::contourArea} koja prima gore navedene aproksimirane konture od jednog (!) lika sa slike (obratite pažnju na to šta prosljeđujete u ovu funkciju). Dužina luka se može izračunati preko formule \lstinline{cv::arcLength} koja prima dva parametra - prvi parametar je isti kao kod funkcije \lstinline{cv::contourArea}, a drugi parametar je tipa \lstinline{bool} koji indicira da li je kriva zatvorena ili otvorena - ako je zatvorena onda je ovaj parametar \lstinline{true}.
+
+Površinu konveksnog omotača nekog oblika možemo izračunati tako što iskoristimo funkciju \lstinline{cv::convexHull} koja prima dva parametra: aproksimiranu konturu nekog oblika i izlazni parametar tipa \lstinline{OutputArray}. Onda možemo iskoristiti pronađeni izlazni vektor i na njega primijeniti funkciju \lstinline{cv::contourArea}.
+
+\subsection*{Računanje momenata konture}
+
+U nastavku će biti data funkcija koja računa \textit{Hu} momente likova sa slike:
+
+\begin{lstlisting}
+void izracunajMomente(std::vector<std::vector<double>> &hu_vrijednosti, std::vector<std::vector<cv::Point>> &konture) {
+
+    // Vektor momenata prvo inicijaliziramo na velicinu konture:
+    std::vector<cv::Moments> momenti(konture.size());
+
+    // Racunamo momente preko cv::moments funkcije:
+    for(int i = 0; i < konture.size(); i++)
+        momenti.at(i) = cv::moments(konture.at(i));
+
+    // Racunanje Hu momenata preko cv::HuMoments funkcije:
+    for(int i = 0; i < konture.size(); i++) {
+        double hu[7];
+        cv::HuMoments(momenti.at(i), hu);
+        std::vector<double> pomi;
+        for(int j = 0; j < 7; j++) {
+            pomi.push_back(hu[j]);
+        }
+        hu_vrijednosti.push_back(pomi);
+    }
+}
+\end{lstlisting}
+
+Ova funkcija prima vektor vektora \lstinline{double}-ova koji su proslijeđeni po referenci i koji će biti upisani na kraju funkcije i predstavljaju \textit{Hu} momente i vektora vektora tačaka koji predstavljaju konture oblika na slici. 
+
+Prvo inicijaliziramo vektor intanci klase \lstinline{cv::Moments} koji je veličine koliko ima likova na slici. Onda računamo momente svake od kontura preko funkcije \lstinline{cv::moments}. Nakon toga ide glavni dio funkcije u kojem da bismo izračunali \textit{Hu} momente, moramo napraviti unutar \lstinline{for} petlje prazan niz \lstinline{double}-ova koji prenosimo kao drugi parametar u funkciji \lstinline{cv::HuMoments}. Prvi parametar te funkcije su svi do sada izračunati momenti. Nakon toga, uz pomoć pomoćne varijable \lstinline{pomi} upisujemo u proslijeđeni parametar vrijednosti izračunate u \lstinline{hu} varijabli. Na kraju je potrebno izvršiti klasifikaciju svih oblika na osnovu pronađenih \textit{Hu} momenata, što se može uraditi na više načina i studenti se podstiču da smisle svoju metodu klasifikacije na osnovu pronađenih \textit{Hu} momenata. Obratiti pažnju na to da je drugi parametar koji prima funkcija \lstinline{cv::HuMoments} prazan izlazni niz \lstinline{double}-ova.
+
+\subsection*{Napomene}
+
+Korištena tema za prikaz C++ koda na tutorijalima je \href{https://ethanschoonover.com/solarized/}{\lstinline{solarized}}\cite{solarized}.
+
+\printbibliography
+
+
+\end{document}

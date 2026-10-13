@@ -1,0 +1,245 @@
+\documentclass[a4paper, 12pt]{article}
+\usepackage{graphicx}
+\usepackage[margin=2cm]{geometry}
+\usepackage[hidelinks]{hyperref}
+\usepackage[croatian]{babel}
+\usepackage[sorting=none]{biblatex}
+    \addbibresource{ref.bib}
+
+
+% Boje za kod:
+\usepackage{xcolor,graphicx}
+\usepackage{listings}
+
+\definecolor{solarized-base03}{RGB}{0, 43, 54}
+\definecolor{solarized-base02}{RGB}{7, 54, 66}
+\definecolor{solarized-base01}{RGB}{88, 110, 117}
+\definecolor{solarized-base00}{RGB}{101, 123, 131}
+\definecolor{solarized-base0}{RGB}{131, 148, 150}
+\definecolor{solarized-base1}{RGB}{147, 161, 161}
+\definecolor{solarized-base2}{RGB}{238, 232, 213}
+\definecolor{solarized-base3}{RGB}{253, 246, 227}
+\definecolor{solarized-yellow}{RGB}{181, 137, 0}
+\definecolor{solarized-orange}{RGB}{203, 75, 22}
+\definecolor{solarized-red}{RGB}{220, 50, 47}
+\definecolor{solarized-magenta}{RGB}{211, 54, 130}
+\definecolor{solarized-violet}{RGB}{108, 113, 196}
+\definecolor{solarized-blue}{RGB}{38, 139, 210}
+\definecolor{solarized-cyan}{RGB}{42, 161, 198}
+\definecolor{solarized-green}{RGB}{133, 153, 0}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily\color{solarized-base00},
+  keywordstyle=\color{solarized-blue}\bfseries,
+  commentstyle=\color{solarized-base1},
+  stringstyle=\color{solarized-cyan},
+  identifierstyle=\color{solarized-violet},
+  numberstyle=\tiny\color{solarized-base01},
+  numbers=left,
+  firstnumber=1,
+  stepnumber=1,
+  showstringspaces=false,
+  tabsize=4,
+  frame=none,
+  framerule=1pt,
+  framexleftmargin=5pt,
+  framexrightmargin=5pt,
+  framextopmargin=3pt,
+  framexbottommargin=3pt,
+  backgroundcolor=\color{solarized-base3},
+  rulecolor=\color{solarized-base01},
+  breaklines=true,
+  breakatwhitespace=true,
+  language=C++
+}
+
+
+\begin{document}
+\noindent
+Univerzitet u Sarajevu\\
+Elektrotehnički fakultet\\
+Predmet: Uvod u digitalnu obradu slike\\
+Predmetni profesor: prof. dr Emir Sokić\\
+Autor: Berina Biberović\\
+Akademska godina: 2022/2023.
+
+
+\begin{center}
+    \section*{Tutorijal 1}
+    \subsection*{Uvod u OpenCV}
+\end{center}
+
+\subsection*{Uvod}
+
+Tutorijali na predmetu Uvod u digitalnu obradu slike uvode osnovne klase iz OpenCV biblioteke i pokazuju primjere kako koristiti te klase i njihove metode, kako bi studenti što lakše mogli da riješe laboratorijske vježbe i zadatke za samostalan rad. Pretpostavlja se poznavanje osnova programiranja u C++ jeziku (iako će se dosta stvari ponoviti, tako da se studenti ne trebaju brinuti ukoliko su zaboravili neke stvari). Toplo se preporučuje studentima redovna vježba na predmetu, jer na ispitima dolaze problemi koji traže ne samo poznavanje materije već i izvježbanost u rješavanju nekih praktičnih problema. Prvi tutorijal se bavi osnovnim elementima OpenCV biblioteke kao i ponavljanjem nekih osnovnih stvari za programiranje u C++ jeziku.
+
+\subsection*{OpenCV biblioteka}
+
+OpenCV (Open Source Computer Vision) je open-source biblioteka koja uključuje više stotina algoritama računarske vizije. OpenCV ima tzv. modularnu strukturu, što znači da paket koji ste prethodno instalirali na svoje računare sadrži više dijeljenih ili statičnih biblioteka. Kako se studenti budu susretali sa novim konceptima na predmetu, tako će se upoznavati sa novim modulima. U prvom tutorijalu se obrađuju moduli za sržnu funkcionalnost (eng. \textit{core functionality}) kao i nekoliko funkcija iz sljedećih modula: \lstinline{imcodecs.hpp}, \lstinline{highgui.hpp} i \lstinline{videoio.hpp}.
+
+Modul za \textit{core} funkcionalnost je kompaktan modul koji definira osnovne sturkture podataka, koje uključuju multi-dimenzionalni niz \lstinline{cv::Mat} i osnovne funkcije koje ostali moduli koriste. Modul za obradu slike sadrži linearno i nelinearno filtriranje slike, geometrijske transformacije slike (kao npr. mijenjanje veličine slike), konverziju prostora boja, histograme, itd.
+
+Sve klase i funkcije iz OpenCV biblioteke se stavljaju u imenik (eng. \textit{namespace}) \lstinline{cv}. Dakle, ukoliko je potrebno da pristupite nekoj funkciji ili klasi iz OpenCV biblioteke, to se može uraditi preko specifikatora \lstinline{cv::} ili preko naredbe \lstinline{using namespace cv;} (za kratke programe ovo je sasvim uredu koristiti, ali za veće programe takva naredba se ne preporučuje zbog toga što preko nje "uvozimo" cijeli imenik u program\cite{juricTPpredavanje1}).
+
+Neka trenutna ili buduća OpenCV eksterna imena mogu biti u konfliktu sa standardnom ili drugim bibliotekama - u tom slučaju je potrebno koristiti eksplicitno specifikator \lstinline{cv::} kako bi se konflikt riješio. Za primjere koji se budu navodili unutar tutorijala, autor tutorijala će uvijek koristiti specifikatore \lstinline{cv::} i \lstinline{std::} kako ne bi došlo do zabune.
+
+\subsection*{Osnovna klasa za manipulaciju digitalnim slikama}
+
+Kao što je prethodno rečeno, osnovna klasa koja se koristi za učitavanje i za obradu slika je multi-dimenzionalni niz \lstinline{cv::Mat}. Kako bi se koristila ova klasa, potrebno je uključiti zaglavlje \textit{core} preko naredbe \lstinline{#include "opencv2/core.hpp"} ili \lstinline{#include <opencv2/core.hpp>}, a ukoliko znamo da iz \textit{core} modula koristimo samo klasu \lstinline{cv::Mat} a ne i ostale funkcionalnosti, može se pisati i: \lstinline{#include <opencv2/core/mat.hpp>} (može se i verizija sa navodnicima koristiti). Ovdje je potrebno istaći da ukoliko je verzija OpenCV-a koju ste instalirali npr. verzija 4, onda je potrebno uključiti zaglavlje na sljedeći način: \lstinline{#include <opencv4/opencv2/core.hpp>}.
+
+Bitno je naglasiti da klasa \lstinline{cv::Mat}, kao i ostale slične klase unutar C++ jezika (kao npr. \lstinline{std::vector} klasa), sadrži destruktor koji dealocira memoriju koju je instanca klase \lstinline{cv::Mat} zauzela u toku svog postojanja, tako da nije potrebno voditi računa o dealokaciji memorije. Ono što je specifično za \lstinline{cv::Mat} klasu je da prilikom dodjele instanci ove klase, vrši se plitka a ne duboka kopija podataka. Dakle, ukoliko se izvrši dodjela tipa \lstinline{cv::Mat B = A;} gdje je \lstinline{A} tipa \lstinline{cv::Mat}, onda obje instance pokazuju na istu strukturu. Ukoliko želite to izbjeći, potrebno je da koristite metodu \lstinline{cv::Mat::clone} koja pravi duboku kopiju instance. Ako je potrebno da ručno oslobodite memoriju neke instance klase \lstinline{cv::Mat}, možete koristiti funkciju \lstinline{.release()}.
+
+U nastavku će biti pokazano na primjeru kako učitati proizvoljnu sliku, prikazati je u prozoru programa i sačuvati je na novoj lokaciji pod novim imenom.
+
+\subsection*{Kreiranje prvog programa u OpenCV-u}
+
+\begin{lstlisting}
+#include <opencv4/opencv2/imgcodecs.hpp>
+#include <opencv4/opencv2/core/mat.hpp>
+#include <opencv4/opencv2/highgui.hpp>
+
+int main() {
+
+    // Deklaracija prve slike koju ucitavamo:
+    cv::Mat prva_slika;
+
+    // Ucitavanje prve slike:
+    prva_slika = cv::imread("put_do_slike_iz_priloga/cat.jpeg", cv::IMREAD_COLOR);
+
+    // Prikaz prve slike u prozoru programa:
+    cv::imshow("Prva ucitana slika", prva_slika);
+
+    // Cekamo unos od korisnika da bismo prestali prikazivati sliku:
+    while(cv::waitKey() != 'q');
+
+    // Cuvanje prve slike na novoj lokaciji pod novim imenom:
+    cv::imwrite("../prva_slika.jpeg", prva_slika);
+
+    return 0;
+
+}
+\end{lstlisting}
+
+U gornjem programu uključili smo tri modula - \lstinline{imgcodecs.hpp}, \lstinline{core/mat.hpp} i \lstinline{highgui.hpp}. Modul \lstinline{core/mat.hpp} je već prethodno bio objašnjen, tako da tu se nećemo zadržavati. Važno je istaći da su funkcije \lstinline{cv::imread} i \lstinline{cv::imrwrite} iz modula \lstinline{imgcodecs.hpp}, a funkcije \lstinline{cv::imshow} i \lstinline{cv::waitKey()} iz modula \lstinline{highgui.hpp}.
+
+Funkcija \lstinline{cv::imread} prima dva parametra; prvi parametar je tipa \lstinline{const String&} i predstavlja put do slike koju želimo učitati, dok je drugi parametar cjelobrojnog tipa koji treba navesti posebnim \textit{flag}-om koji je definiran u OpenCV-u. U toku nastave, najčešće korišteni \textit{flag}-ovi će biti \lstinline{cv::IMREAD_COLOR} i \lstinline{cv::IMREAD_GRAYSCALE}, koji učitavaju sliku u boji i u tonovima sive, respektivno.
+
+Funkcija \lstinline{cv::imshow} pravi novi prozor na ekranu i prima dva parametra - prvi parametar je tipa \lstinline{const String&} i predstavlja naziv novootvorenog prozora, dok je drugi parametar tipa \lstinline{InputArray} koji je u ovom slučaju \lstinline{cv::Mat} tipa i predstavlja sliku koju smo prethodno učitali. Ovaj prozor će da bude na ekranu dokle god korisnik ne unese "q", što je postignuto sa funkcijom \lstinline{cv::waitKey()} unutar \lstinline{while} petlje. Da nema linije 18, onda ne bismo uopšte vidjeli prozor sa slikom jer je on otvoren sve dok program radi - zbog toga čekamo unos sa tastature da bismo prešli na narednu funkciju.
+
+Posljednja funkcija je \lstinline{cv::imwrite} koja prima dva parametra: parametar tipa \lstinline{const String&} koji predstavlja put do mjesta gdje želimo sačuvati učitanu sliku i drugi parametar tipa \lstinline{InputArray} koji je ovdje \lstinline{cv::Mat} tipa i predstavlja našu učitanu sliku. U ovom primjeru je put napisan kao \lstinline{"../"} - ovo znači da će se slika sačuvati na lokaciji gdje se nalazi kreirani projekat.
+
+Treba naglasiti da svaki put kada se učitava i čuva slika da je potrebno pisati i naziv i ekstenziju slike unutar puta koji je naveden - česta greška je navođenje pogrešne ekstenzije slike. Srećom, na ovom predmetu slike su uglavnom sa ekstenzijom .jpg, .jpeg i .png tako da ne bi trebalo biti prevelike zabune oko odgovarajuće ekstenzije.
+
+\subsection*{Manipulacija video datotekama u OpenCV-u}
+
+Da bismo mogli učitati video snimak sa kamere ili sa video datotetke ili sekvenci slika u OpenCV-u, potrebno je koristiti posebnu klasu za učitavanje videa - \lstinline{cv::VideoCapture}. Ova klasa se nalazi unutar modula \lstinline{videoio.hpp} i u nastavku će biti pokazan osnovni primjer za učitavanje video datoteke i spašavanje video datoteke u novu datoteku.
+
+\begin{lstlisting}
+#include <opencv4/opencv2/core/mat.hpp>
+#include <opencv4/opencv2/highgui.hpp>
+#include <opencv4/opencv2/videoio.hpp>
+
+int main() {
+
+    // Ucitavanje videa u instancu klase cv::VideoCapture:
+    cv::VideoCapture originalni_video("put_do_videa/video.mp4");
+
+    // Varijabla tipa cv::Mat koju cemo koristiti za ucitavanje frejmova iz originalnog videa:
+    cv::Mat frame;
+
+    // Prikaz videa u novom prozoru:
+
+    // Instance klase cv::VideoCapture se ponasaju slicno kao instance input streamova (std::cin):
+    originalni_video >> frame;
+
+    // Dokle god ucitavamo frameove, neka se vrti while petlja (dakle, dok ne dodjemo do kraja videa):
+    while(!frame.empty()) {
+
+        // Prikazujemo frame u novom prozoru:
+        cv::imshow("Ucitani video", frame);
+
+        // Ukoliko pritisnemo 'q' program izlazi iz petlje:
+        if(cv::waitKey() == 'q') break;
+
+        // Ucitaj novi frame:
+        originalni_video >> frame;
+    }
+
+    // Zatvaramo video file ili kameru ovom naredbom:
+    originalni_video.release();
+
+    return 0;
+}
+\end{lstlisting}
+
+U gornjem primjeru je prikazano kako učitati video iz video datoteke i prikazati ga na ekranu u novom prozoru. U liniji 8 je prikazano instanciranje objekta tipa \lstinline{cv::VideoCapture}; vidimo da je potrebno varijabli samo proslijediti put do željenog videa kako bismo pozvali konstruktor. Pored objekta tipa \lstinline{cv::VideoCapture} potreban nam je i objekat tipa \lstinline{cv::Mat} kako bismo mogli video učitavati \textit{"frame by frame"} - možemo posmatrati da se svaki video sastoji od niza slika koje dolaze jedna iza druge i kako se smjenjuju naše oko to percipira kao kretanje objekta/objekata na ekranu. 
+
+Instance klase \lstinline{cv::VideoCapture} se ponašaju slično kao objekti \lstinline{std::cin} iz \lstinline{iostream} biblioteke. Tako da možemo vidjeti po linijama 16 i 28 iz gornjeg primjera da je potrebno samo napisati konstrukciju tipa \lstinline{ucitani_video >> frame} kako bismo učitali naredni \textit{frame} iz videa. U liniji 19 počinje \lstinline{while} petlja koja nam omogućava nanovo učitavanje sljedećeg \textit{frame}-a i prikazivanje svakog unutar prozora programa (isto kao što smo prikazivali pojedinačne slike u prethodnom primjeru).
+
+Ono što je bitno naglasiti je da kako bismo prešli na naredni \textit{frame}, potrebno je da korisnik pritišće bilo koju tipku na tastaturi osim tipke "q" - koju smo ovdje stavili kao opciju za prekidanje prikaza videa prije nego što se dođe do posljednjeg \textit{frame}-a (tj. kraja videa).
+
+Na kraju, u liniji 32 naredbom \lstinline{originalni_video.release()} zatvaramo otvoreni video ili kameru koju koristimo. Ova metoda se automatski zove ukoliko iskoristimo funkciju \newline \lstinline{cv::VideoCapture::open} kako bismo novi video otvorili ali smjestili ga u istu varijablu i ukoliko se pozove \lstinline{cv::VideoCapture} destruktor. U ovom primjeru naredba u liniji 32 jeste suvišna (sjetimo se da na kraju programa OpenCV se brine da se pozovu svi potrebni destruktori unutar programa), ali ova naredba može koristiti u nekim drugim situacijama, tako da je ostavljena unutar programa kao primjer.
+
+Ukoliko želimo da učitavamo video sa web kamere, onda je u prethodnom primjeru potrebno zamjeniti u liniji 8 put do videa sa nulom: \lstinline{cv::VideoCapture originalni_video(0)}. U tom slučaju će se u novootvorenom prozoru koji prikazuje video prikazivati trenutni snimak sa vaše video kamere (ukoliko je imate, naravno) - ali opet će biti potrebno pritiskati na tastaturi neku od tipki da bi se trenutni \textit{frame} mogao prikazati unutar prozora, a pritiskom na tipku "q" \lstinline{while} petlja se zaustavlja i zatvara se prozor i time završava program.
+
+Još jedna stvar koja je potrebna je da naučimo je kako snimiti video u novu datoteku, a to će biti pokazano u sljedećem primjeru.
+
+\begin{lstlisting}
+#include <opencv4/opencv2/core/mat.hpp>
+#include <opencv4/opencv2/highgui.hpp>
+#include <opencv4/opencv2/videoio.hpp>
+
+int main() {
+
+    // Instanciranje objekta tipa cv::VideoCapture ali preko web kamere:
+    cv::VideoCapture kamera(0);
+
+    // Treba nam opet frame:
+    cv::Mat frame;
+
+    // Potrebna nam je sirina i visina videa za instanciranje novog tipa
+    // za snimanje snimka sa kamere u datoteku:
+    int sirina_videa = kamera.get(cv::CAP_PROP_FRAME_WIDTH);
+    int visina_videa = kamera.get(cv::CAP_PROP_FRAME_HEIGHT);
+
+    // Kako bismo mogli snimiti video sa kamere, potrebna nam je nova klasa:
+    cv::VideoWriter snimak_sa_kamere("../snimak_sa_kamere.avi", cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 10, cv::Size(sirina_videa, visina_videa));
+
+    // Ucitavanje narednog frame-a unutar uslova petlje i provjera da li je zadnji frame
+    // U ovom kontekstu to nema smisla jer je u pitanju video koji se direktno sa
+    // web kamere snima, ali moze se isto iskoristiti ako se ucitava video
+    // iz datoteke:
+    while(kamera >> frame, !frame.empty()) { // Koristenje sejtan operatora se ne preporucuje!
+
+        // Upisivanje frame-a u novi snimak:
+        snimak_sa_kamere.write(frame);
+
+        // Prikaz trenutnog frame-a:
+        cv::imshow("Trenutni frame", frame);
+
+        // Ukoliko se pritisne "q", break-a se while petlja:
+        if(cv::waitKey() == 'q') break;
+    }
+
+    // Slicno kao u prethodnom primjeru, iskoritimo .release() funkciju za
+    // zatvaranje videa:
+    snimak_sa_kamere.release();
+    kamera.release();
+
+    return 0;
+}
+\end{lstlisting}
+
+Za upis u video datoteku smo morali koristiti \lstinline{cv::VideoWriter} klasu. Konstruktor ove klase prima sljedeće parametre: varijablu tipa \lstinline{const String&} koja predstavlja ime datoteke u koju ćemo snimiti (upisati) video (obavezno dodati odgovarajući nastavak); varijablu tipa \lstinline{int fourcc} koja predstavlja 4-karakterni kod kodeka koji se koristi da bi se \textit{frame}-ovi kompresovali - mi smo koristili \lstinline{cv::VideoWriter::fourcc('M', 'J', 'P', 'G')} koja je \textit{motion-jpeg} kodek; varijablu tipa \lstinline{double} koja predstavlja broj \textit{frame}-ova po sekundi; parametar tipa \lstinline{cv::Size(width, height)} koji predstavlja veličinu video \textit{frame}-ova; i na kraju predefinisani parametar tipa \lstinline{bool isColor = true} koji ako je nenulti (automatski jeste nenulti) onda enkoder očekuje i enkodirat će \textit{frame}-ove u boji, a u suprotnom će raditi sa \textit{grayscale frame}-ovima (trenutno ovaj parametar je jedino podržan u Windows operativnom sistemu).
+
+Učitavnje širine i visine videa smo uradili preko funkcije \lstinline{.get()} u linijama 15 i 16, tako što smo proslijedili odgovarajući \textit{flag} tipa \lstinline{enum} funkciji \lstinline{cv::CAP_PROP_FRAME_WIDTH} i \newline \lstinline{cv::CAP_PROP_FRAME_HEIGHT}.
+
+Nakon toga, procedura za upisivanje videa je slična kao i za prikaz svakog novog \textit{frame}-a u prozoru na ekranu, gdje se unutar \lstinline{while} petlje koristi funkcija \lstinline{.write()} nad objektom \lstinline{snimak_sa_kamere} gdje se prosljeđuje objekat \lstinline{frame}. Petlja se prekida pritiskom na tipku "q" ili ukoliko je učitani \textit{frame} prazan (što se ne može desiti ukoliko se učitava video sa web kamere ukoliko je ona upaljena, ali može se desiti ukoliko snimamo video iz neke video datoteke).
+
+\subsection*{Napomene}
+
+Korištena tema za prikaz C++ koda na tutorijalima je \href{https://ethanschoonover.com/solarized/}{\lstinline{solarized}}\cite{solarized}.
+
+\printbibliography
+
+\end{document}
