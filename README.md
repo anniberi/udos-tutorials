@@ -1,6 +1,6 @@
 # OpenCV Tutorials for Introduction to Digital Image Processing
 
-A series of ten C++/OpenCV tutorials written as teaching material for the Introduction to Digital Image Processing course. They cover image and video I/O, color spaces, histograms, edge detection, frequency-domain deblurring, template matching, morphology and watershed segmentation, shape descriptors, camera calibration, and SIFT/ORB local features. Each tutorial comes with its LaTeX source and runnable example programs. I wrote the tutorials and examples; the versions published on the course website were reviewed and edited by the course's teaching assistant.
+A series of ten C++/OpenCV tutorials I wrote as my project for the Introduction to Digital Image Processing course (2022/2023). They cover image and video I/O, color spaces, histograms, edge detection, frequency-domain deblurring, template matching, morphology and watershed segmentation, shape descriptors, camera calibration, and SIFT/ORB local features. Each tutorial comes with its LaTeX source and runnable example programs. The course has likely changed considerably since then, especially given the rapid developments in AI-based image generation and editing, so this material reflects the 2022/2023 curriculum.
 
 > **Note:** Apart from this summary, everything in this project is written in Bosnian: the rest of this README, the source code, the comments and the technical documentation.
 
@@ -8,9 +8,9 @@ A series of ten C++/OpenCV tutorials written as teaching material for the Introd
 
 ## O projektu
 
-Tutorijali su napisani za predmet **Uvod u digitalnu obradu slike** na Elektrotehničkom fakultetu Univerziteta u Sarajevu (akademska 2022/2023. godina). Uvode osnovne klase i funkcije biblioteke OpenCV i pokazuju primjere njihove upotrebe, kako bi studenti lakše riješili laboratorijske vježbe i zadatke za samostalan rad. Pretpostavlja se osnovno poznavanje programskog jezika C++.
+Tutorijali su nastali kao moj projekat na predmetu **Uvod u digitalnu obradu slike** na Elektrotehničkom fakultetu Univerziteta u Sarajevu (akademska 2022/2023. godina). Zamišljeni su kao nastavni materijal koji uvodi osnovne klase i funkcije biblioteke OpenCV i pokazuje primjere njihove upotrebe, kako bi studenti lakše riješili laboratorijske vježbe i zadatke za samostalan rad. Pretpostavlja se osnovno poznavanje programskog jezika C++.
 
-Autorica sam tutorijala i pratećih primjera u ovom repozitoriju. Verzije objavljene na stranici predmeta pregledao je i dopunio asistent na predmetu, pa se mogu razlikovati od verzija u ovom repozitoriju.
+Gradivo predmeta se od tada vjerovatno značajno promijenilo, posebno s obzirom na nagli razvoj metoda za generisanje i obradu slike zasnovanih na vještačkoj inteligenciji, pa tutorijali odražavaju sadržaj predmeta iz akademske 2022/2023. godine.
 
 ## Sadržaj tutorijala
 
@@ -84,6 +84,6 @@ pdflatex main.tex
 
 ## Autor
 
-- **Autorica tutorijala i primjera:** Berina Biberović
+- **Autor tutorijala i primjera:** Berina Biberović
 - **Predmet:** Uvod u digitalnu obradu slike, Elektrotehnički fakultet, Univerzitet u Sarajevu
 - **Predmetni profesor:** prof. dr Emir Sokić
